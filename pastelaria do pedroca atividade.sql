@@ -6,7 +6,7 @@ CREATE TABLE clientes_pastelaria(
     nome VARCHAR(50) NOT NULL,
     apelido VARCHAR(15),
     data_nascimento CHAR(8),
-    telefone CHAR(15) NOT NULL,
+    telefone CHAR(15) NOT NULL UNIQUE,
     cpf CHAR(14) NOT NULL UNIQUE,
     email VARCHAR(40) UNIQUE,
     cep CHAR(8),
