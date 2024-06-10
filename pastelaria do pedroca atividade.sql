@@ -79,8 +79,7 @@ VALUES ('MARIA', 'MARI', '18/04/1999', '(75)982569387', '896-555-600.32', 'MARIA
        ('LUISA SOUSA', 'SOUSA', '17/08/2006', '(75)982566241', '898-500-444.36', 'LUISA96@GMAIL.COM', '44075-854', 'RUA GUSTA', 95, 'MANGABEIRA', 'FEIRA DE SANTANA'),
        ('JUNIOR ', 'JUNINHO', '18/08/2007', '(75)982548974', '869-444-569-69', 'JUNIOR@GMAIL.COM', '44058-963', 'RUA SANTOS', 30, 'BARAUNA', 'FEIRA DE SANTANA'),
        ('JOSEVAL', 'JOSE', '19/12/2000', '(75)98649675', '896-555-874.74', 'JOSE89@GMAIL.COM', '44089-987', 'RUA SOUSA', 58, 'FERREIRRA', 'FEIRA DE SANTANA');
-       
-       
+           
 INSERT INTO pastel (nome, categoria, tamanho, preco, ingredientes)
 VALUES ('POPEYE', 'VEGANO', 'GRANDE', 9.00, 'Espinafre, tofu'),
        ('POPEYE', 'VEGANO', 'MEDIO', 7.00, 'Espinafre, tofu'),
@@ -100,9 +99,7 @@ VALUES ('POPEYE', 'VEGANO', 'GRANDE', 9.00, 'Espinafre, tofu'),
        ('QUENELLE', 'SEMLACTOSE', 'GRANDE', 9.00, 'Chocolate, creme de amêndoas'),
        ('QUENELLE', 'SEMLACTOSE', 'MEDIO', 8.00, 'Chocolate, creme de amêndoas'),
        ('QUENELLE', 'SEMLACTOSE', 'PEQUENO', 6.00, 'Chocolate, creme de amêndoas');
-       
-       
-       
+          
 INSERT INTO recheios (nome, ingredientes, preco)
 VALUES 
     ('Queijo', 'Queijo muçarela, queijo prato', 3.50),
@@ -130,10 +127,8 @@ VALUES
     ('Ervilha e Cenoura', 'Ervilha cozida, cenoura ralada', 4.00),
     ('Abobrinha e Tomate Seco', 'Abobrinha grelhada, tomate seco picado', 3.50),
     ('Espinafre e Ricota', 'Espinafre refogado, ricota esfarelada', 4.50);
-
-       
+      
 DELIMITER //
-
 CREATE PROCEDURE ListarPasteisVeganosMais18Anos()
 BEGIN
     SELECT pastel.nome AS pastel_nome
@@ -144,8 +139,6 @@ BEGIN
     WHERE pastel.categoria = 'VEGANO'
     AND TIMESTAMPDIFF(YEAR, STR_TO_DATE(clientes_pastelaria.data_nascimento, '%d/%m/%Y'), CURDATE()) > 18;
 END //
-
-
 
 SELECT 
     YEAR(pedidos.data_pedido) AS ano,
@@ -171,21 +164,16 @@ JOIN pastel_recheio  ON pastel.id = pastel_recheio.id_pastel
 JOIN recheios  ON pastel_recheio.id_recheio = recheios.id
 WHERE recheios.nome LIKE '%Bacon%' OR recheios.nome LIKE '%Queijo%';
 
-
-
 DELIMITER //
-
 CREATE PROCEDURE CalcularValorTotalVenda()
 BEGIN
     SELECT SUM(preco) AS valor_total_venda
     FROM pastel;
 END //
-
 DELIMITER ;
 
 
 DELIMITER //
-
 CREATE PROCEDURE ListarPedidosPastelBebida()
 BEGIN
     SELECT DISTINCT pedidos.id AS id_pedido
@@ -194,13 +182,9 @@ BEGIN
     JOIN pastel ON Pedido_Pastel.id_pastel = pastel.id
     JOIN Pedido_Bebida ON pedidos.id = Pedido_Bebida.id_pedido;
 END //
-
 DELIMITER ;
 
-
-
 DELIMITER //
-
 CREATE PROCEDURE ListarPasteisMaisVendidos()
 BEGIN
     SELECT 
@@ -215,11 +199,9 @@ BEGIN
     ORDER BY 
         quantidade_vendas DESC;
 END //
-
 DELIMITER ;
 
 DELIMITER //
-
 CREATE TRIGGER calcular_total_pedido AFTER INSERT ON Pedido_Pastel
 FOR EACH ROW
 BEGIN
@@ -228,12 +210,10 @@ BEGIN
     UPDATE Pedidos SET total = total_pedido WHERE id = NEW.id_pedido;
 END;
 //
-
 DELIMITER ;
 
 
 DELIMITER //
-
 CREATE EVENT cancelar_pedidos_nao_pagos
 ON SCHEDULE EVERY 1 DAY
 DO
@@ -243,12 +223,10 @@ BEGIN
     WHERE status = 'Pendente' AND DATEDIFF(NOW(), data_pedido) > 3;
 END;
 //
-
 DELIMITER ;
 
 
 DELIMITER //
-
 CREATE TRIGGER atualizar_historico_vendas AFTER UPDATE ON Pedidos
 FOR EACH ROW
 BEGIN
@@ -258,10 +236,9 @@ BEGIN
     END IF;
 END;
 //
-
 DELIMITER ;
-DELIMITER //
 
+DELIMITER //
 CREATE TRIGGER atualizar_preco_total_remover AFTER DELETE ON Pedido_Pastel
 FOR EACH ROW
 BEGIN
@@ -276,17 +253,81 @@ BEGIN
     WHERE id = OLD.id_pedido;
 END;
 //
-
 DELIMITER ;
 
 DELIMITER //
-
 CREATE TRIGGER registrar_ultimo_preco_pastel BEFORE UPDATE ON pastel
 FOR EACH ROW
 BEGIN
     SET NEW.preco_anterior = OLD.preco;
 END;
 //
-
 DELIMITER ;
+
+CREATE VIEW Clientes_Com_Pedidos_Pendentes AS
+SELECT DISTINCT c.*
+FROM clientes_pastelaria c
+JOIN Pedidos p ON c.id = p.id_cliente
+WHERE p.status = 'Pendente';
+
+CREATE VIEW Pedidos_Ultimo_Mes AS
+SELECT *
+FROM Pedidos
+WHERE MONTH(data_pedido) = MONTH(CURRENT_DATE()) AND YEAR(data_pedido) = YEAR(CURRENT_DATE());
+
+CREATE VIEW Pasteis_Veganos AS
+SELECT *
+FROM pastel
+WHERE categoria = 'Vegano';
+
+CREATE VIEW Total_Vendas_Por_Cliente AS
+SELECT cp.nome, cp.apelido, COUNT(p.id) AS total_vendas
+FROM clientes_pastelaria cp
+JOIN Pedidos p ON cp.id = p.id_cliente
+WHERE p.status = 'Concluído'
+GROUP BY cp.nome, cp.apelido;
+
+CREATE VIEW Pedidos_Cancelados AS
+SELECT *
+FROM Pedidos
+WHERE status = 'Cancelado';
+
+CREATE VIEW Pasteis_Mais_Vendidos AS
+SELECT p.nome, COUNT(pp.id_pastel) AS quantidade_vendida
+FROM pastel p
+LEFT JOIN Pedido_Pastel pp ON p.id = pp.id_pastel
+GROUP BY p.nome
+ORDER BY quantidade_vendida DESC;
+
+CREATE VIEW Pedidos_Por_Forma_Pagamento AS
+SELECT forma_pagamento, COUNT(id) AS quantidade_pedidos
+FROM Pedidos
+GROUP BY forma_pagamento;
+
+CREATE VIEW Semana_Mais_Vendida AS
+SELECT 
+    ano, mes, semana, total_vendas_semana
+FROM (
+    SELECT 
+        YEAR(data_pedido) AS ano,
+        MONTH(data_pedido) AS mes,
+        WEEK(data_pedido) AS semana,
+        SUM(total) AS total_vendas_semana
+    FROM Pedidos
+    WHERE status = 'Concluído'
+    GROUP BY YEAR(data_pedido), MONTH(data_pedido), WEEK(data_pedido)
+    ORDER BY total_vendas_semana DESC
+    LIMIT 1
+) AS subquery;
+
+CREATE VIEW Pedidos_Com_Clientes AS
+SELECT p.id AS pedido_id, c.nome AS cliente_nome, p.data_pedido, p.forma_pagamento
+FROM Pedidos p
+JOIN clientes_pastelaria c ON p.id_cliente = c.id;
+
+CREATE VIEW Pedidos_Concluidos AS
+SELECT *
+FROM Pedidos
+WHERE status = 'Concluído';
+
 
